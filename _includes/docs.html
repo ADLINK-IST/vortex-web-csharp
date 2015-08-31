@@ -1,0 +1,98 @@
+    <!-- ******DOCS****** --> 
+    <section id="docs" class="docs section">
+        <div class="container">
+            <div class="docs-inner">
+            <h2 class="title text-center">Get Started</h2>
+            <div class="block">
+                <h3 class="sub-title text-center">Create a Vortex Object</h3>
+                <p>To connect to the Vortex data sharing platform you need a Vortex object. It requires knowing the id of the domain you are connecting to. In the example below we connect to domain 0 (zero).</p>
+                
+                <div class="code-block">
+                    <!--//Use Prismjs - http://prismjs.com/index.html#basic-usage -->
+                    <pre><code class="language-csharp">var domainId = 0;
+Vortex vortex = new VortexImpl (domainId);</code></pre>
+                </div><!--//code-block-->
+            </div><!--//block-->
+            <div class="block">
+                <h3 class="sub-title text-center">Connect to Vortex</h3>
+                <p>To establish a connection to Vortex you need the URL of the server and an authentication token.</p>
+                <p>The URL is for the Vortex Web server you are connecting to. Running the server on the same machine as the application the URL will be http://localhost:9000. The default port used by the Vortex Web server is 9000.</p>
+                <p>The authentication token is dependent on the access management pluglin you are using. By default there is no access management, the token can be any string.</p>
+                
+                <div class="code-block">
+                    <!--//Use Prismjs - http://prismjs.com/index.html#basic-usage -->
+                    <pre><code class="language-csharp">
+var URL = "http://localhost:9000";
+var Token = "nopwd";
+await vortex.Connect (URL, Token);</code></pre>
+                </div><!--//code-block-->
+            </div><!--//block-->
+
+            <div class="block">
+                <h3 class="sub-title text-center">Create a Topic</h3>
+                <p>In Vortex to read or write data you first need to register a Topic. A topic is registered with a unique name and a type. Default quality of service settings for readers and writers of the topic data can also be provided.</p>
+                <p>The topic name must be unique within the domain you are connected to. If registering a topic that may have already been registered then it must register with the same type.</p>
+                <p>The type of the topic is provided in two pieces (a) a programming language specific type and (b) a name used for registering the type. The programming language specific type will point to a class in Java. The name used for registering is the name of the type that is by Vortex.</p>
+                
+                <div class="code-block">
+                    <!--//Use Prismjs - http://prismjs.com/index.html#basic-usage -->
+                    <pre><code class="language-csharp">
+var topicName = "TChatMessage";
+var topicType = "com.prismtech.cafe.demo.idl.ChatMessage";
+var topicRegistrationType = "com.prismtech.cafe.demo.idl.ChatMessage";
+var qos = new List&lt;QosPolicy&gt;();
+
+var topic = await vortex.CreateTopic&lt;ChatMessage&gt; (topicName, 
+                                                topicType, 
+                                                topicRegistrationType, 
+                                                qos);</code></pre>
+                </div><!--//code-block-->
+            </div><!--//block-->
+
+            <div class="block">
+                <h3 class="sub-title text-center">Read Data</h3>
+                <p>To read Vortex data you need a data reader. A data reader is created for a specific topic and quality of service. The topic is one that is registered with Vortex. The quality of service is an optionally empty list of quality of service policies.</p>
+                
+                <div class="code-block">
+                    <!--//Use Prismjs - http://prismjs.com/index.html#basic-usage -->
+                    <pre><code class="language-csharp">
+var qos = new List&lt;QosPolicy&gt;();
+var reader = await vortex.CreateDataReader&lt;ChatMessage&gt; (topic, qos);
+
+reader.OnDataAvailable += (object sender, SampleData&lt;ChatMessage&gt; e) => {
+    Console.WriteLine("Received: " + e.Data);
+};</code></pre>
+                </div><!--//code-block-->
+            </div><!--//block-->
+
+            <div class="block">
+                <h3 class="sub-title text-center">Write Data</h3>
+                <p>To write Vortex data you need a data writer. A data writer is created for a specific topic and quality of service. The topic is one that is registered with Vortex. The quality of service is an optionally empty list of quality of service policies.</p>
+                
+                <div class="code-block">
+                    <!--//Use Prismjs - http://prismjs.com/index.html#basic-usage -->
+                    <pre><code class="language-csharp">
+var qos = new List&lt;QosPolicy&gt;();
+var writer = await vortex.CreateDataWriter&lt;ChatMessage&gt; (topic, qos);
+
+var msg = new ChatMessage ("csharp", "roks!");
+for (var i = 0; i < 10; i++) {
+    await writer.Write (msg);
+}</code></pre>
+                </div><!--//code-block-->
+            </div><!--//block-->
+
+            <div class="block">
+                <h3 class="sub-title text-center">Disconnect</h3>
+                <p>When you have finished reading or writing data it is a good idea to close the connnection to Vortex.</p>
+                
+                <div class="code-block">
+                    <!--//Use Prismjs - http://prismjs.com/index.html#basic-usage -->
+                    <pre><code class="language-csharp">
+await vortex.Disconnect ();
+await vortex.Close ();</code></pre>
+                </div><!--//code-block-->
+            </div><!--//block-->
+            </div><!--//docs-inner-->         
+        </div><!--//container-->
+    </section><!--//docs->

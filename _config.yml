@@ -1,0 +1,23 @@
+# Site settings
+name: PrismTech
+title: vortex-xamarin
+email: innovation@prismtech.com
+description: > # this means to ignore newlines until "baseurl:"
+  An API for Xamarin to access PrismTech's Vortex data sharing platform.
+baseurl: "" # the subpath of your site, e.g. /blog/
+url: "http://prismtech.github.io/vortex-xamarin" # the base hostname & protocol for your site
+twitter_username: VortexDDS
+github_username:  PrismTech
+
+# URL of your avatar or profile pic (you could use your GitHub profile pic)
+avatar: https://avatars2.githubusercontent.com/u/1701983
+
+# Enter your Disqus shortname (not your username) to enable commenting on posts
+# You can find your shortname on the Settings page of your Disqus account
+disqus:
+
+# Enter your Google Analytics web tracking code (e.g. UA-2110908-2) to activate tracking
+google_analytics: UA-66686350-3
+
+# Build settings
+markdown: kramdown
