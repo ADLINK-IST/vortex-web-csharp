@@ -17,35 +17,43 @@ using System;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
-namespace com.prismtech.vortex.cs.api.qos
+namespace vortex.web
 {
-	[JsonConverter(typeof(ContentFilterQosPolicyConverter))]
-	public struct ContentFilterQosPolicy
+	public enum DurabilityKind : int
 	{
-		private readonly string _filter;
-
-		public ContentFilterQosPolicy (string filter)
-		{
-			_filter = filter;
-		}
-
-		public string Filter {
-			get {
-				return this._filter;
-			}
-		}
+		VOLATILE = 0,
+		TRANSIENT_LOCAL = 1,
+		TRANSIENT = 2,
+		PERSISTENT = 3
 	}
 
-	public class ContentFilterQosPolicyConverter : JsonConverter
+	[JsonConverter (typeof(DurabilityConverter))]
+	public class Durability : QosPolicy
+	{
+		public DurabilityKind Kind { get; }
+
+		public readonly Durability Volatile = new Durability (DurabilityKind.VOLATILE);
+		public readonly Durability TransientLocal = new Durability (DurabilityKind.TRANSIENT_LOCAL);
+		public readonly Durability Transient = new Durability (DurabilityKind.TRANSIENT);
+		public readonly Durability Persistent = new Durability (DurabilityKind.PERSISTENT);
+
+		private Durability (DurabilityKind kind)
+		{
+			this.Kind = kind;
+		}
+
+
+	}
+
+	public class DurabilityConverter : JsonConverter
 	{
 		public override void WriteJson (JsonWriter writer, object value, JsonSerializer serializer)
 		{
-			var policy = (ContentFilterQosPolicy)value;
+			var policy = (Durability)value;
 			var json = new JObject ();
 
-
-			json.Add (new JProperty ("id", 3));
-			json.Add (new JProperty ("v", policy.Filter));
+			json.Add (new JProperty ("id", 5));
+			json.Add (new JProperty ("k", (int)policy.Kind));
 
 			json.WriteTo (writer);
 		}
@@ -57,8 +65,9 @@ namespace com.prismtech.vortex.cs.api.qos
 
 		public override bool CanConvert (Type objectType)
 		{
-			return objectType == typeof(ContentFilterQosPolicy);
+			return objectType == typeof(Durability);
 		}
+
 	}
 }
 

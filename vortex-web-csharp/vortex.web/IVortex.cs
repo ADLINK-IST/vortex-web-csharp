@@ -19,13 +19,13 @@ using System.Threading.Tasks;
 
 using Newtonsoft.Json;
 
-using com.prismtech.vortex.cs.api.qos;
-using com.prismtech.vortex.web.proto;
+using vortex.web;
+using vortex.web.proto;
 
-namespace com.prismtech.vortex.web.cs.api
+namespace vortex.web
 {
 
-    interface Vortex
+    interface IVortex
 	{
 		event EventHandler<OnConnectEventArgs> RaiseConnectEvent;
 		event EventHandler<OnDisconnectEventArgs> RaiseDisconnectEvent;
@@ -92,13 +92,9 @@ namespace com.prismtech.vortex.web.cs.api
 		Task<Topic> CreateTopic<T>(string name, string type, string typeRegistrationType, List<QosPolicy> qos);
 	}
 
-	public class VortexImpl : Vortex
+	public class Vortex : IVortex
 	{
-		/// <summary>
-		/// Create a logger for use in this class
-		/// </summary>
-		private static readonly log4net.ILog log = log4net.LogManager.GetLogger(System.Reflection.MethodBase.GetCurrentMethod().DeclaringType);
-
+		
 		public event EventHandler<OnConnectEventArgs> RaiseConnectEvent;
 		public event EventHandler<OnDisconnectEventArgs> RaiseDisconnectEvent;
 		public event EventHandler<OnCloseEventArgs> RaiseCloseEvent;
@@ -119,6 +115,10 @@ namespace com.prismtech.vortex.web.cs.api
 
 		public int Domain{ get; private set; }
 		public string URL { get; private set; }
+
+		public readonly List<QosPolicy> DefaultReaderQos = new List<QosPolicy> () { Reliability.BestEffort, History.KeepLast(1) };
+		public readonly List<QosPolicy> DefaultWriterQos = new List<QosPolicy> () { Reliability.Reliable,   History.KeepLast(1) };
+		public readonly List<QosPolicy> DefaultTopicQos = new List<QosPolicy> ()  { Reliability.BestEffort, History.KeepLast(1) };
 
 		/// <summary>
 		/// Checks whether Vortex is connected.
@@ -142,10 +142,9 @@ namespace com.prismtech.vortex.web.cs.api
 		/// The domain for this Vortex object.
 		/// </summary>
 		/// <param name="domain">Domain.</param>
-		public VortexImpl (int vortexDomain)
+		public Vortex (int vortexDomain)
 		{
-			if (log.IsDebugEnabled) log.Debug ("Creating Vortex for domain " + Domain);
-
+			System.Diagnostics.Debug.WriteLine ($"Creating Vortex for domain {Domain}");
 			Domain = vortexDomain;
 			_isConnected = NOT_CONNECTED;
 			_isClosed = NOT_CLOSED;
@@ -159,16 +158,16 @@ namespace com.prismtech.vortex.web.cs.api
 		/// <param name="authToken">Authorization token.</param>
 		public async Task Connect(string srv, string authToken) 
 		{
-			if (log.IsDebugEnabled) log.Debug ("Connecting to " + srv);
+			System.Diagnostics.Debug.WriteLine ($"Connecting to {srv}");
 			
 			if (!IsClosed && NOT_CONNECTED == Interlocked.CompareExchange (ref _isConnected, CONNECTED, NOT_CONNECTED)) {
 				URL = srv;
 				_ctrl = new SControlLink ();
 				await _ctrl.ConnectAsync (srv, authToken);
 				OnConnect (new OnConnectEventArgs(URL));
-				if (log.IsDebugEnabled) log.Debug ("Connected to " + srv);
-			} else {
-				if (log.IsWarnEnabled) log.Warn ("Unable to connect to " + srv);
+				System.Diagnostics.Debug.WriteLine ($"Connected to {srv}");
+			} else {				
+				System.Diagnostics.Trace.WriteLine ($"Unable to connect to {srv}");
 			}
 		}
 
@@ -178,16 +177,16 @@ namespace com.prismtech.vortex.web.cs.api
 		/// </summary>
 		public async Task Disconnect() 
 		{
-			if (log.IsDebugEnabled) log.Debug ("Disconnecting from " + URL);
+			System.Diagnostics.Debug.WriteLine ($"Disconnecting from {URL}");
 
 			if (CONNECTED == Interlocked.CompareExchange (ref _isConnected, NOT_CONNECTED, CONNECTED)) 
 			{
 				await _ctrl.DisconnectAsync ();
 				_ctrl = null;
 				OnDisconnect(new OnDisconnectEventArgs(URL));
-				if (log.IsDebugEnabled) log.Debug ("Disconnected from " + URL);
+				System.Diagnostics.Debug.WriteLine ($"Disconnected from {URL}");
 			} else {
-				if (log.IsWarnEnabled) log.Warn ("Unable to disconnect from " + URL);
+				System.Diagnostics.Debug.WriteLine ($"Unable to disconnect from {URL}");
 			}
 		}
 
@@ -197,17 +196,15 @@ namespace com.prismtech.vortex.web.cs.api
 		/// </summary>
 		public async Task Close()
 		{
-			if (log.IsDebugEnabled) log.Debug ("Closing " + URL);
+			System.Diagnostics.Debug.WriteLine ($"Closing {URL}");
 			if (NOT_CLOSED == Interlocked.CompareExchange (ref _isClosed, CLOSED, NOT_CLOSED)) {
 				await Disconnect ();
 				OnClose (new OnCloseEventArgs(URL));
-				if (log.IsDebugEnabled)
-					log.Debug ("Closed " + URL);
+				System.Diagnostics.Debug.WriteLine ($"Closed {URL}");
 			} else {
-				if (log.IsWarnEnabled) log.Warn ("Unable to close " + URL);
+				System.Diagnostics.Debug.WriteLine ($"Unable to close {URL}");
 			}
 		}
-
 
 
 		/// <summary>
@@ -215,12 +212,22 @@ namespace com.prismtech.vortex.web.cs.api
 		/// </summary>
 		/// <returns>The newly created DataWriter</returns>
 		/// <param name="topic">The topic that will be written by the DataWriter</param>
-		/// <param name="qos">Possibly empty list of QoS policies for the DataWriter</param>
+		public async Task<DataWriter<T>> CreateDataWriter<T>(Topic topic) 
+		{
+			return await CreateDataWriter<T> (topic, this.DefaultWriterQos);
+		}
+
+		/// <summary>
+		/// Creates a new data writer.
+		/// </summary>
+		/// <returns>The newly created DataWriter</returns>
+		/// <param name="topic">The topic that will be written by the DataWriter</param>
+		/// <param name="qos">A non empty list of QoS policies for the DataWriter</param>
 		public async Task<DataWriter<T>> CreateDataWriter<T>(Topic topic, List<QosPolicy> qos) 
 		{
 			if (IsConnected) {
-				var qosJson = (qos != null) ? JsonConvert.SerializeObject (qos) : "";
-				var ws = await _ctrl.CreateWriterAsync (Domain, topic.Name, qosJson);
+				List<QosPolicy> vqos = (qos == null) || (qos.Count == 0) ? DefaultWriterQos : qos; 
+				var ws = await _ctrl.CreateWriterAsync (Domain, topic.Name, vqos);
 				var dw = new DataWriterImpl<T> (ws);
 				OnNewDataWriter (new OnNewDataWriterEventArgs (dw));
 				return dw;
@@ -234,12 +241,22 @@ namespace com.prismtech.vortex.web.cs.api
 		/// </summary>
 		/// <returns>The newly created DataReader</returns>
 		/// <param name="topic">The topic that will be read by the DataReader</param>
-		/// <param name="qos">Possibly empty list of QoS policies for the DataReader.</param>
+		public async Task<DataReader<T>> CreateDataReader<T>(Topic topic) 
+		{
+			return await CreateDataReader<T> (topic, DefaultReaderQos);
+		}
+
+		/// <summary>
+		/// Creates a new data reader.
+		/// </summary>
+		/// <returns>The newly created DataReader</returns>
+		/// <param name="topic">The topic that will be read by the DataReader</param>
+		/// <param name="qos">A non-empty list of QoS policies for the DataReader.</param>
 		public async Task<DataReader<T>> CreateDataReader<T>(Topic topic, List<QosPolicy> qos) 
 		{
 			if (IsConnected) {
-				var qosJson = (qos != null) ? JsonConvert.SerializeObject (qos) : "";
-				var ws = await _ctrl.CreateReaderAsync (Domain, topic.Name, qosJson);
+				var vqos = (qos == null) || (qos.Count == 0) ? DefaultReaderQos : qos;				
+				var ws = await _ctrl.CreateReaderAsync (Domain, topic.Name, vqos);
 				var dr = new DataReaderImpl<T> (ws);
 				OnNewDataReader (new OnNewDataReaderEventArgs (dr));
 				return dr;
@@ -253,15 +270,47 @@ namespace com.prismtech.vortex.web.cs.api
 		/// </summary>
 		/// <returns>The newly created Topic.</returns>
 		/// <param name="name">The name of the new topic.</param>
+		public async Task<Topic> CreateTopic<T>(string name) 
+		{
+			return await CreateTopic<T> (name, DefaultTopicQos);
+		}
+			
+		/// <summary>
+		/// Create a new Topic
+		/// </summary>
+		/// <returns>The newly created Topic.</returns>
+		/// <param name="name">The name of the new topic.</param>
+		public async Task<Topic> CreateTopic<T>(string name, List<QosPolicy> qos) 
+		{
+			// This is the default for flexy" types
+			var tt = "org.omg.dds.types.JSONTopicType";
+			var trt = "org::omg::dds::types::JSONTopicType";
+
+			var vqos = (qos == null) || (qos.Count == 0) ? DefaultTopicQos : qos;
+
+			if (typeof(ITopicType).IsAssignableFrom (typeof(T))) {
+				// If this is a CDR topic type then we need to do things differently.
+				tt = typeof(T).FullName;
+				trt = tt.Replace (".", "::"); 
+			} 				
+
+			return await CreateTopic<T> (name, tt, trt, vqos); 
+		}
+
+		/// <summary>
+		/// Create a new Topic
+		/// </summary>
+		/// <returns>The newly created Topic.</returns>
+		/// <param name="name">The name of the new topic.</param>
 		/// <param name="type">The type to be used by the server for creating the topic.</param>
 		/// <param name="typeRegistrationType">The type to register the topic with Vortex.</param>
 		/// <param name="qos">Possibly empty list of Qos policies for the Topic.</param>
-		public async Task<Topic> CreateTopic<T>(string name, string type, string typeRegistrationType, List<QosPolicy> qos) 
+		public async Task<Topic> CreateTopic<T>(string name, string tt, string trt, List<QosPolicy> qos) 
 		{
 			if (IsConnected) {
-				var qosJson = (qos != null) ? JsonConvert.SerializeObject (qos) : "";
-				await _ctrl.CreateTopicAsync (Domain, name, type, typeRegistrationType, qosJson);
-				var topic = new TopicImpl (Domain, name, type, qos.ToArray());
+				var rqos = (qos == null) || (qos.Count == 0) ? DefaultTopicQos : qos;
+				await _ctrl.CreateTopicAsync (Domain, name, tt, trt, rqos);
+				var topic = new TopicImpl (Domain, name, tt, qos);
 				OnNewTopic (new OnNewTopicEventArgs (topic));
 				return topic;
 			} else {

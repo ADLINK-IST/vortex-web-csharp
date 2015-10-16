@@ -1,4 +1,4 @@
-# vortex-xamarin
+# vortex-web-csharp
 A [PrismTech](http://www.prismtech.com/vortex) [Vortex](http://www.prismtech.com/vortex) API for use in [Xamarin](http://xamarin.com/). It is built on top of [Vortex Web](http://www.prismtech.com/vortex/vortex-web) and relies on [WebSockets](https://en.wikipedia.org/wiki/WebSocket). Using the API it is possible to use a common code base to build desktop, [iOS](http://www.apple.com/ca/ios/) and [Android](https://www.android.com/) apps that use Vortex data.
 
 # Vortex Overview

@@ -17,7 +17,7 @@ using System.Threading.Tasks;
 using WebSocketSharp;
 using Newtonsoft.Json;
 
-namespace com.prismtech.vortex.web.cs.api
+namespace vortex.web
 {
 	public interface DataReader {
 		event EventHandler<OnDataReaderConnectEventArgs> OnConnectEvent;
@@ -33,6 +33,14 @@ namespace com.prismtech.vortex.web.cs.api
 		event EventHandler<SampleData<T>> OnDataAvailable;
 	}
 
+	public class DataHolder {
+		public string value;
+
+		public DataHolder(string v) {
+			this.value = v;
+		}
+	}
+
 	public class DataReaderImpl<T> : DataReader<T>
 	{
 		public event EventHandler<SampleData<T>> OnDataAvailable;
@@ -44,12 +52,16 @@ namespace com.prismtech.vortex.web.cs.api
 		public event EventHandler<OnDataReaderCloseEventArgs> OnCloseEvent;
 
 		private readonly WebSocket ws;
+		private Boolean isFlexy = true;
 
 		public DataReaderImpl (WebSocket ws)
 		{
 			this.ws = ws;
 			ws.OnClose += (object sender, CloseEventArgs e) => Close();
 			ws.OnMessage += OnMessage;
+			if (typeof(vortex.web.ITopicType).IsAssignableFrom (typeof(T)))
+				isFlexy = false;
+					
 		}
 		
 
@@ -77,8 +89,15 @@ namespace com.prismtech.vortex.web.cs.api
 
 		public void OnMessage(object sender, MessageEventArgs e) {
 			var json = e.Data;
-			T obj = JsonConvert.DeserializeObject<T> (json);
-			OnDataAvailable (this, new SampleData<T> (obj));
+			if (isFlexy) {
+				DataHolder holder = JsonConvert.DeserializeObject<DataHolder> (json);
+				T obj = JsonConvert.DeserializeObject<T> (holder.value);
+				OnDataAvailable (this, new SampleData<T> (obj));
+			} else {
+				T obj = JsonConvert.DeserializeObject<T> (json);
+				OnDataAvailable (this, new SampleData<T> (obj));
+			}
+
 		}
 			
 	}

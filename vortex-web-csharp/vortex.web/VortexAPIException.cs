@@ -13,28 +13,30 @@
  * limitations under the License.
  */
 using System;
-using com.prismtech.vortex.web.proto;
-using com.prismtech.vortex.web.cs.api;
-using Newtonsoft.Json;
-using System.Threading.Tasks;
-using System.Threading;
-using System.Text;
-using WebSocketSharp;
 
-namespace com.prismtech.vortex.cs.api
+namespace vortex.web
 {
-	class ChatMessage {
-		public string user;
-		public string msg;
-
-		public ChatMessage(string usr, string msg) {
-			this.user = usr;
-			this.msg = msg;
-		}
-
-		public override string ToString ()
+	public class VortexAPIException : Exception
+	{
+		public VortexAPIException () : base()
 		{
-			return string.Format ("{0}> {1}", user, msg);
 		}
+		
+
+		public VortexAPIException (string message) : base (message)
+		{
+		}
+		
+
+		public VortexAPIException (System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) : base (info, context)
+		{
+		}
+		
+
+		public VortexAPIException (string message, Exception innerException) : base (message, innerException)
+		{
+		}
+		
 	}
 }
+

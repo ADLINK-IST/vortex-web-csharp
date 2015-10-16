@@ -17,34 +17,35 @@ using System;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
-namespace com.prismtech.vortex.cs.api.qos
+namespace vortex.web
 {
-	[JsonConverter(typeof(TimeFilterQosPolicyConverter))]
-	public struct TimeFilterQosPolicy
+	[JsonConverter(typeof(ContentFilterConverter))]
+	public class ContentFilter : QosPolicy
 	{
-		private readonly int _value;
+		private readonly string _filter;
 
-		public TimeFilterQosPolicy (int value)
+		public ContentFilter (string filter)
 		{
-			_value = value;
+			_filter = filter;
 		}
 
-		public int Value {
+		public string Filter {
 			get {
-				return this._value;
+				return this._filter;
 			}
 		}
 	}
 
-	public class TimeFilterQosPolicyConverter : JsonConverter
+	public class ContentFilterConverter : JsonConverter
 	{
 		public override void WriteJson (JsonWriter writer, object value, JsonSerializer serializer)
 		{
-			var policy = (TimeFilterQosPolicy)value;
+			var policy = (ContentFilter)value;
 			var json = new JObject ();
 
-			json.Add (new JProperty ("id", 4));
-			json.Add (new JProperty ("v", policy.Value));
+
+			json.Add (new JProperty ("id", 3));
+			json.Add (new JProperty ("v", policy.Filter));
 
 			json.WriteTo (writer);
 		}
@@ -56,7 +57,7 @@ namespace com.prismtech.vortex.cs.api.qos
 
 		public override bool CanConvert (Type objectType)
 		{
-			return objectType == typeof(TimeFilterQosPolicy);
+			return objectType == typeof(ContentFilter);
 		}
 	}
 }

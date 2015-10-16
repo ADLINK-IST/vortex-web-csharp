@@ -16,55 +16,30 @@ using System;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
-namespace com.prismtech.vortex.cs.api.qos
+namespace vortex.web
 {
-	[JsonConverter(typeof(HistoryQosPolicyConverter))]
-	public struct HistoryQosPolicy
+	[JsonConverter(typeof(ParitionConverter))]
+	public class Partition : QosPolicy
 	{
-		private readonly HistoryKind _kind;
-		private readonly int _depth;
+		public string[] Value { get; }
 
-		public HistoryQosPolicy(HistoryKind kind, int depth)
+		public Partition (params string[] partitions)
 		{
-			_kind = kind;
-			_depth = depth;
-		}
-
-		public HistoryKind Kind {
-			get {
-				return this._kind;
-			}
-		}
-
-		public int Depth {
-			get {
-				return this._depth;
-			}
-		}
-
-
-		public enum HistoryKind : int {
-			KEEP_ALL = 0,
-			KEEP_LAST = 1
-		}
+			this.Value = partitions;
+		}			
 	}
 
-	public class HistoryQosPolicyConverter : JsonConverter
+	public class ParitionConverter : JsonConverter 
 	{
 		public override void WriteJson (JsonWriter writer, object value, JsonSerializer serializer)
 		{
-			var policy = (HistoryQosPolicy)value;
+			var policy = (Partition)value;
 			var json = new JObject ();
-			json.Add (new JProperty ("id", 0));
-			json.Add (new JProperty ("k", (int)policy.Kind));
-
-			if (policy.Kind == HistoryQosPolicy.HistoryKind.KEEP_LAST) 
-			{
-				json.Add (new JProperty ("v", policy.Depth));
-			}
-
+			json.Add (new JProperty ("id", 2));
+			json.Add(new JProperty("vs", new JArray(policy.Value)));
 			json.WriteTo (writer);
 		}
+
 
 		public override object ReadJson (JsonReader reader, Type objectType, object existingValue, JsonSerializer serializer)
 		{
@@ -73,7 +48,7 @@ namespace com.prismtech.vortex.cs.api.qos
 
 		public override bool CanConvert (Type objectType)
 		{
-			return objectType == typeof(HistoryQosPolicy);
+			return objectType == typeof(Partition);
 		}
 	}
 }

@@ -14,132 +14,152 @@
  */
 using System;
 using System.Text;
-using System.Net.WebSockets;
 using System.Threading;
-using com.prismtech.vortex.web.cs.api;
+using vortex.web;
 using Newtonsoft.Json;
 using System.Threading.Tasks;
+using WebSocketSharp;
+using System.Collections;
+using System.Collections.Generic;
 
-namespace com.prismtech.vortex.web.proto
+namespace vortex.web.proto
 {
-	public class ControlLink
+	public class SControlLink
 	{
 		private const string ctrlPath = "/vortex/controller/";
 		private const string readerPath = "/vortex/reader/";
 		private const string writerPath = "/vortex/writer/";
-		private byte[] buf;
-		private ArraySegment<byte> segment;
+		private Hashtable taskMap;
 		string url;
+		WebSocket ws;
 
 		int seqNum = 0;
-		ClientWebSocket ws = new ClientWebSocket ();
+		private bool connected = false;
 
 		public bool Connected 
 		{ 
 			get {				
-				return ws.State == WebSocketState.Open; 			
+				return connected; 			
 			}
 		} 
-			
 
-		public ControlLink() {
-			buf = new byte[8192];
-			segment = new ArraySegment<byte> (buf);
+
+		public SControlLink() {			
+			taskMap = new Hashtable ();
 		}
 
-		public Task ConnectAsync (string url, string authToken) {			
+		private Task<bool> ConnectWebSockAsync (WebSocket ws) {
+			var t = new TaskCompletionSource<bool> ();
+			ws.OnOpen += (sender, e) => { 
+				t.SetResult(true); 
+				connected = true;
+			};
+			ws.Connect ();
+			return t.Task;
+		}
+		public Task<bool> ConnectAsync (string url, string authToken) {						
 			if (!Connected) {
 				this.url = url;
-				Console.WriteLine ("Connecting to: " + url);
-				var uri = new Uri (url + ctrlPath + authToken);
-				Console.WriteLine ("Issuing connect to " + url);
-				return ws.ConnectAsync (uri, CancellationToken.None);		
+				var uri = url + ctrlPath + authToken;
+				ws = new WebSocket (uri);
+				ws.OnMessage += (sender, e) =>  {
+					var msg = JsonConvert.DeserializeObject<CommandReply> (e.Data);
+					lock (taskMap) {
+						var task = taskMap[msg.h.sn] as TaskCompletionSource<CommandReply>; 
+						if (task != null) {							
+							task.SetResult (msg);
+						}
+					}
+				};
+				return ConnectWebSockAsync (ws);
 
 			} else
 				throw new InvalidOperationException ("The runtime is already connected.");
 		}
-			
+
 		int nextSequenceNumber() {
 			return Interlocked.Increment (ref seqNum);
 		}
 
 		public Task DisconnectAsync () { 
-			return ws.CloseAsync (WebSocketCloseStatus.NormalClosure, "Closed by client", CancellationToken.None);
+			return Task.Run(() => ws.Close ());
+
 		}
-			
+
 		private void assertConnection () {
 			if (!Connected) throw new InvalidOperationException ("The runtime is already connected.");
 		}
 
-		private Task sendCommand<T> (T cmd) {
+		private Task sendCommand<T> (T cmd, int sn) {
+			var t = new TaskCompletionSource<CommandReply> ();
+			lock (taskMap) {
+				taskMap.Add (sn, t);
+			}
 			var jsonCmd = JsonConvert.SerializeObject (cmd);
-			var ecmd = Encoding.UTF8.GetBytes (jsonCmd);
-			var buffer = new ArraySegment<Byte>(ecmd, 0, ecmd.Length);
-			return ws.SendAsync (buffer, System.Net.WebSockets.WebSocketMessageType.Text, true, CancellationToken.None);
+			return Task.Run (() => ws.Send (jsonCmd));
 		}
 
-		public async Task CreateTopicAsync(int did, string tname, string ttype, string tregtype, string qos) { 
+		public async Task CreateTopicAsync(int did, string tname, string ttype, string tregtype, List<QosPolicy> qos) { 
 			assertConnection ();
 			var sn = nextSequenceNumber ();
 			// In DDS types are represented with "::" separator
 			var canonicalTregType = tregtype.Replace (".", "::");
 			var tinfo = new TopicInfo (did, tname, ttype, canonicalTregType, qos);
 			var cmd = new CreateTopic (tinfo, sn);
-			await sendCommand (cmd);
-			var reply = await receiveReplyAsync ();
+			await sendCommand (cmd, sn);
+			var reply = await receiveReplyAsync (sn);
 			if (reply.h.cid != CommandId.OK)
 				throw new InvalidOperationException ("The topic cration failed because of: " + reply.b.msg);
 		}
 
-		private async Task<CommandReply> receiveReplyAsync() {
-			var result = await ws.ReceiveAsync (segment, CancellationToken.None);
-			var count = result.Count;
-			if (count > 0) {				
-				var json = Encoding.UTF8.GetString (buf);
-				return JsonConvert.DeserializeObject<CommandReply> (json);
-			} else {
-				var b = new ReplyBody (" ", "Error"); 
-				var h = new Header (CommandId.Error, EntityKind.Runtime, -1);
-				return  new CommandReply (h, b);
+		private Task<CommandReply> receiveReplyAsync(int sn) {
+			TaskCompletionSource<CommandReply> task = null;
+			lock (taskMap) {
+				task = taskMap[sn] as TaskCompletionSource<CommandReply>;
 			}
-				
+			if (task == null) 
+				throw new InvalidOperationException ("The Control Link State is inconsistent. Could not find task for an outstanding request");			
+			var t = task.Task;
+			var continuation = t.ContinueWith (antecedent => {
+				lock (taskMap) { taskMap.Remove (sn); }
+				return antecedent.Result;
+			});
+			return continuation;
 		}
-			
-		public async Task<ClientWebSocket> CreateReaderAsync(int did, string tname, string qos) { 
+
+		public async Task<WebSocket> CreateReaderAsync(int did, string tname, List<QosPolicy> qos) { 
 			assertConnection ();
 			var sn = nextSequenceNumber ();
 			var ei = new EndpointInfo (did, tname, qos);
 			var cmd = new CreateReader (ei, sn);
-			await sendCommand (cmd);				
-			var reply = await receiveReplyAsync ();
+			await sendCommand (cmd, sn);				
+			var reply = await receiveReplyAsync (sn);
 			Console.WriteLine ("Reply: {eid: " + reply.b.eid + ", msg: " + reply.b.msg + "}");
 			if (reply.h.cid == CommandId.OK) {
-				var rws = new ClientWebSocket ();
-				var uri = new Uri (url + readerPath + reply.b.eid);
-				await rws.ConnectAsync (uri, CancellationToken.None);
+				var uri = url + readerPath + reply.b.eid;
+				var rws = new WebSocket (uri);
+				await ConnectWebSockAsync (rws);
 				return rws;
 			} else
 				return null;
 		}
 
-		public async Task<ClientWebSocket> CreateWriterAsync(int did, string tname, string qos) { 
-			assertConnection ();
+		public async Task<WebSocket> CreateWriterAsync(int did, string tname, List<QosPolicy> qos) { 
 			assertConnection ();
 			var sn = nextSequenceNumber ();
 			var ei = new EndpointInfo (did, tname, qos);
 			var cmd = new CreateWriter (ei, sn);
-			await sendCommand (cmd);
-			var reply = await receiveReplyAsync ();
+			await sendCommand (cmd,sn);
+			var reply = await receiveReplyAsync (sn);
 			Console.WriteLine ("Reply: {eid: " + reply.b.eid + ", msg: " + reply.b.msg + "}");
 
 			if (reply.h.cid == CommandId.OK) {
-				var wws = new ClientWebSocket ();
-				// wws.Options.UseDefaultCredentials ();
-				var uri = new Uri (url + writerPath + reply.b.eid);
+				var uri = url + writerPath + reply.b.eid;
+				var wws = new WebSocket (uri);
 				Console.WriteLine ("Connecting Writer to: " + url + writerPath + reply.b.eid);
-				await wws.ConnectAsync (uri, CancellationToken.None);
-				Console.WriteLine ("Connected Writer to: " + url + writerPath + reply.b.eid);
+				await ConnectWebSockAsync (wws);
 				return wws;
+					
 			} else
 				return null;
 		}

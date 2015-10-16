@@ -14,7 +14,7 @@
  */
 using System;
 
-namespace com.prismtech.vortex.web.proto 
+namespace vortex.web.proto 
 {
 	
 	public class CreateTopic {

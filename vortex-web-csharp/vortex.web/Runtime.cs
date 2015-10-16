@@ -13,11 +13,12 @@
  * limitations under the License.
  */
 using System;
-using com.prismtech.vortex.web.proto;
+using vortex.web.proto;
 using System.Threading.Tasks;
 using WebSocketSharp;
+using System.Collections.Generic;
 
-namespace com.prismtech.vortex.web.cs.api
+namespace vortex.web
 {
 	public delegate void StringHandler(string server);
 		
@@ -48,15 +49,15 @@ namespace com.prismtech.vortex.web.cs.api
 			OnDisconnect (this.url);
 		}
 
-		public  Task  CreateTopicAsync (int did, string tname, string ttype, string tregtype, string qos) { 			
+		public  Task  CreateTopicAsync (int did, string tname, string ttype, string tregtype, List<QosPolicy> qos) { 			
 			return ctrlLink.CreateTopicAsync (did, tname, ttype, tregtype, qos);
-		}
+		}			
 
-		public Task<WebSocket> CreateReaderAsync (int did, string tname, string qos) { 
+		public Task<WebSocket> CreateReaderAsync (int did, string tname, List<QosPolicy> qos) { 
 			return ctrlLink.CreateReaderAsync(did, tname, qos);
 		}
 
-		public Task<WebSocket> CreateWriterAsync (int did, string tname, string qos) { 
+		public Task<WebSocket> CreateWriterAsync (int did, string tname, List<QosPolicy> qos) { 
 			return ctrlLink.CreateWriterAsync(did, tname, qos);
 		}
 

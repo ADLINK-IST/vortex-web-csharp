@@ -14,10 +14,49 @@
  */
 using System;
 
-namespace com.prismtech.vortex.cs.api.qos
+using vortex.web;
+using System.Collections.Generic;
+
+namespace vortex.web
 {
-	public interface QosPolicy
+	public interface Topic {
+		int Domain { get; }
+		string Name { get; }
+		string Type { get; }
+		List<QosPolicy> QoS { get; }
+
+
+	}
+
+	public class TopicImpl : Topic
 	{
+		public int Domain {
+			get;
+			private set;
+		}
+
+		public string Name {
+			get;
+			private set;
+		}
+
+		public string Type {
+			get;
+			private set;
+		}
+
+		public List<QosPolicy> QoS {
+			get;
+			private set;
+		}
+
+		public TopicImpl (int domain, string name, string type, List<QosPolicy> qos)
+		{
+			Domain = domain;
+			Name = name;
+			Type = type;
+			QoS = qos;
+		}
 	}
 }
 

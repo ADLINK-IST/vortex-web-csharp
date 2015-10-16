@@ -13,8 +13,9 @@
  * limitations under the License.
  */
 using System;
+using System.Collections.Generic;
 
-namespace com.prismtech.vortex.web.proto 
+namespace vortex.web.proto 
 {
 
 	public enum CommandId {
@@ -78,9 +79,9 @@ namespace com.prismtech.vortex.web.proto
 		public readonly string tn;
 		public readonly string tt;
 		public readonly string trt;
-		public readonly string qos;
+		public readonly List<QosPolicy> qos;
 
-		public TopicInfo(int did, string tn, string tt, string trt, string qos) {
+		public TopicInfo(int did, string tn, string tt, string trt, List<QosPolicy> qos) {
 			this.did = did;
 			this.tn = tn;
 			this.tt = tt;
@@ -95,9 +96,9 @@ namespace com.prismtech.vortex.web.proto
 	public class EndpointInfo {
 		public readonly int did;
 		public readonly string tn;
-		public readonly string qos;
+		public readonly List<QosPolicy> qos;
 
-		public EndpointInfo(int did, string tn, string qos) {
+		public EndpointInfo(int did, string tn, List<QosPolicy> qos) {
 			this.did = did;
 			this.tn = tn;
 			this.qos = qos;

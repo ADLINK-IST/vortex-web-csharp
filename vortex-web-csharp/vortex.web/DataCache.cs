@@ -17,7 +17,7 @@ using System;
 using System.Threading.Tasks;
 using System.Collections.Generic;
 
-namespace com.prismtech.vortex.web.cs.api
+namespace vortex.web
 {
 	public delegate K ExtractKey<K,V>(V value);
 

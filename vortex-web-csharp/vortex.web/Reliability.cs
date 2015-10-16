@@ -17,27 +17,35 @@ using System;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
-namespace com.prismtech.vortex.cs.api.qos
+namespace vortex.web
 {
-	[JsonConverter(typeof(DurabilityQosPolicyConverter))]
-	public enum DurabilityQosPolicy : int
-	{
-		VOLATILE = 0,
-		TRANSIENT_LOCAL = 1,
-		TRANSIENT = 2,
-		PERSISTENT = 3
+	
+	public enum ReliabilityKind : int {
+		RELIABLE = 0,
+		BEST_EFFORT = 1
 	}
 
-	public class DurabilityQosPolicyConverter : JsonConverter
-	{
+	[JsonConverter(typeof(ReliabilityConverter))]
+	public class Reliability :  QosPolicy {
+	
+		public ReliabilityKind Kind { get; } 
+
+		private Reliability (ReliabilityKind kind) {
+			this.Kind = kind;
+		}
+
+		public readonly static Reliability Reliable = new Reliability (ReliabilityKind.RELIABLE);
+		public readonly static Reliability BestEffort = new Reliability (ReliabilityKind.BEST_EFFORT);
+	}
+
+	public class ReliabilityConverter : JsonConverter {
 		public override void WriteJson (JsonWriter writer, object value, JsonSerializer serializer)
 		{
-			var policy = (DurabilityQosPolicy)value;
+			var policy = (Reliability) value;
 			var json = new JObject ();
 
-			json.Add (new JProperty ("id", 5));
-			json.Add (new JProperty ("k", (int)policy));
-
+			json.Add (new JProperty ("id", 1));
+			json.Add (new JProperty ("k", (int)policy.Kind));
 			json.WriteTo (writer);
 		}
 
@@ -48,8 +56,9 @@ namespace com.prismtech.vortex.cs.api.qos
 
 		public override bool CanConvert (Type objectType)
 		{
-			return objectType == typeof(DurabilityQosPolicy);
+			return objectType == typeof(Reliability);
 		}
+
 	}
 }
 

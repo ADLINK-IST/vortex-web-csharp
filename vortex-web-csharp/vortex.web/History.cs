@@ -16,36 +16,69 @@ using System;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
-namespace com.prismtech.vortex.cs.api.qos
+namespace vortex.web
 {
-	[JsonConverter(typeof(ParitionQosPolicyConverter))]
-	public struct PartitionQosPolicy
-	{
-		readonly string[] values;
-
-		public PartitionQosPolicy (params string[] values)
-		{
-			this.values = values;
-		}
-
-		public string[] Values {
-			get {
-				return this.values;
-			}
-		}
+	public enum HistoryKind : int {
+		KEEP_ALL = 0,
+		KEEP_LAST = 1
 	}
 
-	public class ParitionQosPolicyConverter : JsonConverter 
+	[JsonConverter(typeof(HistoryConverter))]
+	public struct History : QosPolicy
+	{
+		private readonly HistoryKind _kind;
+		private readonly int _depth;
+		private static readonly History HistoryKeepLastOne = new History (HistoryKind.KEEP_LAST, 1);
+
+		public readonly static History KeepAll = 
+			new History (HistoryKind.KEEP_ALL, -1);
+
+		public static History KeepLast (int n) {
+			if (n == 1)
+				return HistoryKeepLastOne;
+			else
+				return new History (HistoryKind.KEEP_LAST, n);
+		}
+
+
+		private History(HistoryKind kind, int depth)
+		{
+			_kind = kind;
+			_depth = depth;
+		}
+
+		public HistoryKind Kind {
+			get {
+				return this._kind;
+			}
+		}
+
+		public int Depth {
+			get {
+				return this._depth;
+			}
+		}
+
+
+
+	}
+
+	public class HistoryConverter : JsonConverter
 	{
 		public override void WriteJson (JsonWriter writer, object value, JsonSerializer serializer)
 		{
-			var policy = (PartitionQosPolicy)value;
+			var policy = (History)value;
 			var json = new JObject ();
-			json.Add (new JProperty ("id", 2));
-			json.Add(new JProperty("vs", new JArray(policy.Values)));
+			json.Add (new JProperty ("id", 0));
+			json.Add (new JProperty ("k", (int)policy.Kind));
+
+			if (policy.Kind == HistoryKind.KEEP_LAST) 
+			{
+				json.Add (new JProperty ("v", policy.Depth));
+			}
+
 			json.WriteTo (writer);
 		}
-
 
 		public override object ReadJson (JsonReader reader, Type objectType, object existingValue, JsonSerializer serializer)
 		{
@@ -54,7 +87,7 @@ namespace com.prismtech.vortex.cs.api.qos
 
 		public override bool CanConvert (Type objectType)
 		{
-			return objectType == typeof(PartitionQosPolicy);
+			return objectType == typeof(History);
 		}
 	}
 }

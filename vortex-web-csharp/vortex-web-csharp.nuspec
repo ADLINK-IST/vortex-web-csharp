@@ -1,0 +1,26 @@
+<?xml version="1.0" ?>
+<package
+    xmlns="http://schemas.microsoft.com/packaging/2010/07/nuspec.xsd">
+  <metadata>
+    <id>vortex.web.sharp</id>
+    <version>0.1.3-alpha</version>
+    <title>Vortex Web C# API</title>
+    <authors>Angelo Corsaro and Toby McClean</authors>
+    <owners>Angelo Corsaro and Toby McClean</owners>
+    <licenseUrl>http://www.apache.org/licenses/LICENSE-2.0.html</licenseUrl>
+    <projectUrl>http://github.com/prismtech/</projectUrl>
+    <requireLicenseAcceptance>false</requireLicenseAcceptance>
+    <description>Asynch Client C# API for Vortex Web </description>
+    <releaseNotes>Removed dependency from Log4Net as it is probelematic for Android/iOS builds.</releaseNotes>
+    <copyright>Copyright 2015</copyright>
+    <tags>DDS, Vortex, IoT</tags>
+    <language> en-US </language>
+    <dependencies>
+      <dependency id="WebSocketSharp" version="1.0.3-rc9" />
+      <dependency id="Newtonsoft.Json" version="7.0.1" />
+    </dependencies>
+  </metadata>
+  <files>
+    <file src="bin/Release/vortex-csharp.dll" target="lib\net45\vortex-csharp.dll" />
+  </files>
+</package>

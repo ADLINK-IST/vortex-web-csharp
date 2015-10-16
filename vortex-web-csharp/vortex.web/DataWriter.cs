@@ -18,17 +18,18 @@ using WebSocketSharp;
 
 using Newtonsoft.Json;
 
-namespace com.prismtech.vortex.web.cs.api
+namespace vortex.web
 {
 	public interface DataWriter {
 		event EventHandler<OnDataWriterCloseEventArgs> OnCloseEvent;
 
 		Task Close();
-		Task Write (params object[] ds);
+		// Task Write (params object[] ds);
+		Task Write (object d);
 	}
 
-	public interface DataWriter<T> : DataWriter {
-		Task Write(params T[] ds);
+	public interface DataWriter<T>  : DataWriter {
+		Task Write(T d);
 	}
 
 	public class DataWriterImpl<T> : DataWriter<T>
@@ -46,33 +47,52 @@ namespace com.prismtech.vortex.web.cs.api
 			ws.OnError += OnWebSocketError;
 		}
 
-		public Task Write (params T[] ds)
-		{
-			return Write (ds as object[]);
+		public Task Write (T d) {
+			return Write (d as object);
 		}
+
+		public Task Write (object d)
+		{
+			return Task.Run(() => {
+				if (ws.IsAlive) {
+					var data = new DataHolder(JsonConvert.SerializeObject (d));
+					var json = JsonConvert.SerializeObject (data);
+					System.Console.WriteLine ("Writing Data: " + data);
+					ws.Send(json);
+				}
+			});
+		}
+
+//		public Task Write (params T[] ds)
+//		{
+//			return Write (ds as object[]);
+//		}
 
 		public Task Close ()
 		{
 			return Task.Run (() => {
 				if (ws.IsAlive) {
+					Console.WriteLine ("Closing WebSocket!!!");
 					ws.Close ();
 				}
 
 				OnCloseEvent (this, new OnDataWriterCloseEventArgs ());
 			});
 		}
-
-		public Task Write (params object[] ds)
-		{
-			return Task.Run(() => {
-				if (ws.IsAlive) {
-					var json = JsonConvert.SerializeObject (ds);
-					ws.Send(json);
-				}
-			});
-		}
+//
+//		public Task Write (params object[] ds)
+//		{
+//			return Task.Run(() => {
+//				if (ws.IsAlive) {
+//					var data = new DataHolder(JsonConvert.SerializeObject (ds));
+//					var json = JsonConvert.SerializeObject (data);
+//					ws.Send(json);
+//				}
+//			});
+//		}
 
 		private void OnWebSocketClose(object sender, CloseEventArgs args) {
+			Console.WriteLine ("Closing Data Writer!");
 			Close ();
 		}
 
@@ -80,6 +100,7 @@ namespace com.prismtech.vortex.web.cs.api
 		}
 
 		private void OnWebSocketError(object sender, ErrorEventArgs args) {
+			Console.WriteLine ("WebSocket Error!");
 		}
 	}
 

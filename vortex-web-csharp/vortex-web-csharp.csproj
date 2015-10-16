@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProjectGuid>{00A97EEA-8AD5-4AC7-917B-9F97CA04E614}</ProjectGuid>
+    <OutputType>Library</OutputType>
+    <RootNamespace>vortexcsharp</RootNamespace>
+    <AssemblyName>vortex-csharp</AssemblyName>
+    <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
+    <ReleaseVersion>0.1.1</ReleaseVersion>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <OutputPath>bin\Debug</OutputPath>
+    <DefineConstants>DEBUG;</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+    <ConsolePause>false</ConsolePause>
+    <LangVersion>5</LangVersion>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <Optimize>true</Optimize>
+    <OutputPath>bin\Release</OutputPath>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+    <ConsolePause>false</ConsolePause>
+    <LangVersion>5</LangVersion>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="System" />
+    <Reference Include="websocket-sharp">
+      <HintPath>..\packages\WebSocketSharp.1.0.3-rc9\lib\websocket-sharp.dll</HintPath>
+    </Reference>
+    <Reference Include="Newtonsoft.Json">
+      <HintPath>..\packages\Newtonsoft.Json.7.0.1\lib\net45\Newtonsoft.Json.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="vortex.web\DataCache.cs" />
+    <Compile Include="vortex.web\DataReader.cs" />
+    <Compile Include="vortex.web\DataWriter.cs" />
+    <Compile Include="vortex.web\Runtime.cs" />
+    <Compile Include="vortex.web\Topic.cs" />
+    <Compile Include="vortex.web\IVortex.cs" />
+    <Compile Include="vortex.web\VortexAPIException.cs" />
+    <Compile Include="vortex.web.proto\ControlLink.cs" />
+    <Compile Include="vortex.web.proto\CtrlProtocolMessages.cs" />
+    <Compile Include="vortex.web.proto\ProtocolTypes.cs" />
+    <Compile Include="vortex.web.proto\SControlLink.cs" />
+    <Compile Include="vortex.web\QosPolicy.cs" />
+    <Compile Include="vortex.web\ITopicType.cs" />
+    <Compile Include="vortex.web\Partition.cs" />
+    <Compile Include="vortex.web\Reliability.cs" />
+    <Compile Include="vortex.web\Durability.cs" />
+    <Compile Include="vortex.web\ContentFilter.cs" />
+    <Compile Include="vortex.web\TimeFilter.cs" />
+    <Compile Include="vortex.web\History.cs" />
+  </ItemGroup>
+  <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
+  <ItemGroup>
+    <None Include="packages.config" />
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="vortex.web\" />
+    <Folder Include="vortex.web.proto\" />
+  </ItemGroup>
+</Project>
