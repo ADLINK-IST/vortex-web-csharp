@@ -1,11 +1,11 @@
 # Site settings
 name: PrismTech
-title: vortex-xamarin
+title: vortex-web-csharp
 email: innovation@prismtech.com
 description: > # this means to ignore newlines until "baseurl:"
   An API for Xamarin to access PrismTech's Vortex data sharing platform.
 baseurl: "" # the subpath of your site, e.g. /blog/
-url: "https://prismtech.github.io/vortex-xamarin" # the base hostname & protocol for your site
+url: "https://prismtech.github.io/vortex-web-csharp" # the base hostname & protocol for your site
 twitter_username: VortexDDS
 twitter_site: toby_mcclean
 github_username:  PrismTech
