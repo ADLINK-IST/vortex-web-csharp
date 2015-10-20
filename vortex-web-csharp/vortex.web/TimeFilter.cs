@@ -13,14 +13,17 @@
  * limitations under the License.
  */
 using System;
+using System.Runtime.InteropServices;
 
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
+[assembly: ComVisible(false)]
 namespace vortex.web
 {
 	[JsonConverter(typeof(TimeFilterConverter))]
-	public struct TimeFilter : QosPolicy
+    [ComVisible(true)]
+    public struct TimeFilter : QosPolicy
 	{
 		private readonly int _value;
 
@@ -34,8 +37,9 @@ namespace vortex.web
 				return this._value;
 			}
 		}
-	}
-
+    }
+    
+    [ComVisible(false)]
 	public class TimeFilterConverter : JsonConverter
 	{
 		public override void WriteJson (JsonWriter writer, object value, JsonSerializer serializer)

@@ -20,9 +20,18 @@ using System.Collections.Generic;
 
 namespace vortex.web
 {
-	public delegate void StringHandler(string server);
+    public class StringHandlerEventArgs : EventArgs
+    {
+        public string Server { get; }
+
+        public StringHandlerEventArgs(string server)
+        {
+            this.Server = server;
+        }
+    }
+	public delegate void StringHandler(object sender, StringHandlerEventArgs e);
 		
-	public class Runtime
+	public class Runtime : IDisposable
 	{
 		public event StringHandler OnConnect;
 		public event StringHandler OnDisconnect;
@@ -46,7 +55,7 @@ namespace vortex.web
 
 		public void Disconnect () {
 			ctrlLink.DisconnectAsync ();
-			OnDisconnect (this.url);
+			OnDisconnect (this, new StringHandlerEventArgs(this.url));
 		}
 
 		public  Task  CreateTopicAsync (int did, string tname, string ttype, string tregtype, List<QosPolicy> qos) { 			
@@ -61,7 +70,43 @@ namespace vortex.web
 			return ctrlLink.CreateWriterAsync(did, tname, qos);
 		}
 
+        #region IDisposable Support
+        private bool disposedValue = false; // To detect redundant calls
 
-	}
+        protected virtual void Dispose(bool disposing)
+        {
+            if (!disposedValue)
+            {
+                if (disposing)
+                {
+                    // TODO: dispose managed state (managed objects).
+                    this.ctrlLink.Dispose();
+                }
+
+                // TODO: free unmanaged resources (unmanaged objects) and override a finalizer below.
+                // TODO: set large fields to null.
+                this.ctrlLink = null;
+                disposedValue = true;
+            }
+        }
+
+        // TODO: override a finalizer only if Dispose(bool disposing) above has code to free unmanaged resources.
+        // ~Runtime() {
+        //   // Do not change this code. Put cleanup code in Dispose(bool disposing) above.
+        //   Dispose(false);
+        // }
+
+        // This code added to correctly implement the disposable pattern.
+        public void Dispose()
+        {
+            // Do not change this code. Put cleanup code in Dispose(bool disposing) above.
+            Dispose(true);
+            // TODO: uncomment the following line if the finalizer is overridden above.
+            // GC.SuppressFinalize(this);
+        }
+        #endregion
+
+
+    }
 }
 

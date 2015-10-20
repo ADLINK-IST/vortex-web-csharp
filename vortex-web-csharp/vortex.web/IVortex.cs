@@ -39,7 +39,7 @@ namespace vortex.web
 		/// </summary>
 		/// <param name="srv">Server URL</param>
 		/// <param name="authToken">Authorization token.</param>
-		Task Connect(string srv, string authToken);
+		Task<bool> Connect(string srv, string authToken);
 
 		/// <summary>
 		/// Disconnects, without closing. Upon re-connection all existing subscriptions
@@ -156,19 +156,21 @@ namespace vortex.web
 		/// </summary>
 		/// <param name="srv">Server URL</param>
 		/// <param name="authToken">Authorization token.</param>
-		public async Task Connect(string srv, string authToken) 
+		public async Task<bool> Connect(string srv, string authToken) 
 		{
 			System.Diagnostics.Debug.WriteLine ($"Connecting to {srv}");
-			
+            bool connected = false;
 			if (!IsClosed && NOT_CONNECTED == Interlocked.CompareExchange (ref _isConnected, CONNECTED, NOT_CONNECTED)) {
 				URL = srv;
 				_ctrl = new SControlLink ();
 				await _ctrl.ConnectAsync (srv, authToken);
 				OnConnect (new OnConnectEventArgs(URL));
 				System.Diagnostics.Debug.WriteLine ($"Connected to {srv}");
+                connected = true;
 			} else {				
 				System.Diagnostics.Trace.WriteLine ($"Unable to connect to {srv}");
 			}
+            return connected;
 		}
 
 		/// <summary>

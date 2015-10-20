@@ -57,7 +57,6 @@ namespace vortex.web
 				if (ws.IsAlive) {
 					var data = new DataHolder(JsonConvert.SerializeObject (d));
 					var json = JsonConvert.SerializeObject (data);
-					System.Console.WriteLine ("Writing Data: " + data);
 					ws.Send(json);
 				}
 			});

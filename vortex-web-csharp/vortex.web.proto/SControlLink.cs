@@ -24,7 +24,7 @@ using System.Collections.Generic;
 
 namespace vortex.web.proto
 {
-	public class SControlLink
+	public class SControlLink : IDisposable
 	{
 		private const string ctrlPath = "/vortex/controller/";
 		private const string readerPath = "/vortex/reader/";
@@ -49,18 +49,28 @@ namespace vortex.web.proto
 		}
 
 		private Task<bool> ConnectWebSockAsync (WebSocket ws) {
-			var t = new TaskCompletionSource<bool> ();
+			var t = new TaskCompletionSource<bool> ();                                    
 			ws.OnOpen += (sender, e) => { 
 				t.SetResult(true); 
 				connected = true;
 			};
-			ws.Connect ();
+            try {
+                ws.Connect();
+            } 
+            catch (System.Net.Sockets.SocketException se)
+            {
+                t.SetException(se);
+            }
+            catch (ArgumentException e)
+            {
+                t.SetException(e);       
+            }
 			return t.Task;
 		}
 		public Task<bool> ConnectAsync (string url, string authToken) {						
 			if (!Connected) {
 				this.url = url;
-				var uri = url + ctrlPath + authToken;
+				var uri = url + ctrlPath + authToken;                
 				ws = new WebSocket (uri);
 				ws.OnMessage += (sender, e) =>  {
 					var msg = JsonConvert.DeserializeObject<CommandReply> (e.Data);
@@ -164,7 +174,44 @@ namespace vortex.web.proto
 				return null;
 		}
 
+        #region IDisposable Support
+        private bool disposedValue = false; // To detect redundant calls
 
-	}
+        protected virtual void Dispose(bool disposing)
+        {
+            if (!disposedValue)
+            {
+                if (disposing)
+                {
+                    // TODO: dispose managed state (managed objects).
+                    this.ws.Close();                    
+                }
+
+                // TODO: free unmanaged resources (unmanaged objects) and override a finalizer below.
+                // TODO: set large fields to null.
+                this.ws = null;
+                this.taskMap = null;
+                disposedValue = true;
+            }
+        }
+
+        // TODO: override a finalizer only if Dispose(bool disposing) above has code to free unmanaged resources.
+        // ~SControlLink() {
+        //   // Do not change this code. Put cleanup code in Dispose(bool disposing) above.
+        //   Dispose(false);
+        // }
+
+        // This code added to correctly implement the disposable pattern.
+        public void Dispose()
+        {
+            // Do not change this code. Put cleanup code in Dispose(bool disposing) above.
+            Dispose(true);
+            // TODO: uncomment the following line if the finalizer is overridden above.
+            // GC.SuppressFinalize(this);
+        }
+        #endregion
+
+
+    }
 }
 

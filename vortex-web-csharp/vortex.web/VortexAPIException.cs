@@ -16,6 +16,7 @@ using System;
 
 namespace vortex.web
 {
+    [Serializable]
 	public class VortexAPIException : Exception
 	{
 		public VortexAPIException () : base()

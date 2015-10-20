@@ -3,7 +3,7 @@
     xmlns="http://schemas.microsoft.com/packaging/2010/07/nuspec.xsd">
   <metadata>
     <id>vortex.web.sharp</id>
-    <version>0.1.3-alpha</version>
+    <version>0.1.4-alpha</version>
     <title>Vortex Web C# API</title>
     <authors>Angelo Corsaro and Toby McClean</authors>
     <owners>Angelo Corsaro and Toby McClean</owners>

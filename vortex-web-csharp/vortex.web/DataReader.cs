@@ -57,7 +57,7 @@ namespace vortex.web
 		public DataReaderImpl (WebSocket ws)
 		{
 			this.ws = ws;
-			ws.OnClose += (object sender, CloseEventArgs e) => Close();
+			ws.OnClose += (object sender, CloseEventArgs e) => Close().Wait();
 			ws.OnMessage += OnMessage;
 			if (typeof(vortex.web.ITopicType).IsAssignableFrom (typeof(T)))
 				isFlexy = false;
